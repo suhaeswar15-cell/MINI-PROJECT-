@@ -8,17 +8,20 @@ SCORE_FILE = "hangman_score.json"
 
 def load_scoreboard():
     if os.path.exists(SCORE_FILE):
-        with open(SCORE_FILE, "r") as file:
-            return json.load(file)
+        try:
+            with open(SCORE_FILE, "r") as file:
+                return json.load(file)
+        except:
+            return {"wins": 0, "losses": 0, "games_played": 0}
     else:
         return {"wins": 0, "losses": 0, "games_played": 0}
+
 
 def save_scoreboard(data):
     with open(SCORE_FILE, "w") as file:
         json.dump(data, file)
 
 scoreboard = load_scoreboard()
-
 
 categories = {
     "Animals": ["tiger", "elephant", "lion", "zebra", "panda", "giraffe"],
@@ -107,7 +110,6 @@ max_incorrect = 6
 chosen_category = ""
 
 
-
 label_category = tk.Label(root, text="Select a Category", font=("Arial", 16))
 label_category.pack()
 
@@ -125,7 +127,6 @@ word_label.pack(pady=10)
 
 frame_buttons = tk.Frame(root)
 frame_buttons.pack()
-
 
 def start_game():
     global secret_word, display_word, incorrect_guesses, chosen_category
@@ -149,14 +150,17 @@ def guess_letter(letter, button):
         for i, ch in enumerate(secret_word):
             if ch == letter:
                 display_word[i] = letter
+
         word_label.config(text=" ".join(display_word))
 
         if "_" not in display_word:
             scoreboard["wins"] += 1
             scoreboard["games_played"] += 1
             save_scoreboard(scoreboard)
+
             messagebox.showinfo("You Win!", f"Correct word: {secret_word}")
             start_game()
+
     else:
         incorrect_guesses += 1
         hangman_label.config(text=hangman_stages[incorrect_guesses])
@@ -165,6 +169,7 @@ def guess_letter(letter, button):
             scoreboard["losses"] += 1
             scoreboard["games_played"] += 1
             save_scoreboard(scoreboard)
+
             messagebox.showerror("You Lost!", f"Word was: {secret_word}")
             start_game()
 
@@ -173,29 +178,22 @@ def enable_all_buttons():
         btn.config(state="normal")
 
 
-
 letter_buttons = []
 alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 for i, letter in enumerate(alphabet):
+
+    def create_cmd(ltr, btn_ref):
+        return lambda: guess_letter(ltr, btn_ref)
+
     btn = tk.Button(frame_buttons, text=letter.upper(),
-                    width=4, height=2,
-                    command=lambda l=letter, b=None: guess_letter(l, temp_btn),
-                    font=("Arial", 12))
+                    width=4, height=2, font=("Arial", 12))
 
-    # Fix lambda issue by binding correct button
-    def make_cmd(ltr, button):
-        return lambda: guess_letter(ltr, button)
+    btn.config(command=create_cmd(letter, btn))
 
-    temp_btn = tk.Button(frame_buttons, text=letter.upper(),
-                         width=4, height=2,
-                         font=("Arial", 12))
+    btn.grid(row=i//9, column=i%9, padx=2, pady=2)
 
-    temp_btn.config(command=make_cmd(letter, temp_btn))
-
-    temp_btn.grid(row=i//9, column=i%9, padx=2, pady=2)
-    letter_buttons.append(temp_btn)
-
+    letter_buttons.append(btn)
 
 
 start_button = tk.Button(root, text="Start Game", font=("Arial", 16),
